@@ -46,7 +46,7 @@ public class EmployeeController {
     public EntityModel<Employee> one(@PathVariable Long id) {
         var employee = repository.findById(id)
                 .orElseThrow(() -> new EmployeeNotFoundException(id));
-        
+
         return assembler.toModel(employee);
     }
 

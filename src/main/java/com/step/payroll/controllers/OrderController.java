@@ -41,6 +41,7 @@ public class OrderController {
                 linkTo(methodOn(OrderController.class).all()).withSelfRel());
     }
 
+    @GetMapping("/orders/{id}")
     public EntityModel<Order> one(@PathVariable Long id) {
         var order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
@@ -48,6 +49,7 @@ public class OrderController {
         return assembler.toModel(order);
     }
 
+    @PostMapping("/orders")
     ResponseEntity<EntityModel<Order>> newOrder(@RequestBody Order order) {
         order.setStatus(Status.IN_PROGRESS);
         var newOrder = orderRepository.save(order);
@@ -58,7 +60,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/order/{id}/cancel")
-    ResponseEntity<?> cancel(@PathVariable Long id) {
+    public ResponseEntity<?> cancel(@PathVariable Long id) {
         var order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException(id));
 
@@ -75,5 +77,23 @@ public class OrderController {
                 .body(Problem.create()
                         .withTitle("Method not allowed")
                         .withDetail("You can't cancel an order that is in the " + order.getStatus() + " status"));
+    }
+
+    @PutMapping("/orders/{id}/complete")
+    public ResponseEntity<?> complete(@PathVariable Long id) {
+        var order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+
+        if (order.getStatus() == Status.IN_PROGRESS) {
+            order.setStatus(Status.COMPLETED);
+            return ResponseEntity.ok(assembler.toModel(orderRepository.save(order)));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .header(HttpHeaders.CONTENT_TYPE, MediaTypes.HTTP_PROBLEM_DETAILS_JSON_VALUE)
+                .body(Problem.create()
+                        .withTitle("Method not allowed")
+                        .withDetail("You can't complete an order that is in the " + order.getStatus() + " status"));
     }
 }
